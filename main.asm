@@ -66,8 +66,10 @@ DSEG    SEGMENT PARA PUBLIC 'DATA'
 		Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
 		Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
 		Fich         	db      'moldura.TXT',0
-		MenuFich		db 		'menu.TXT',0
-		InGame			db		0
+		MenuFich		db 		'menu.TXT',0 ; 0 - Menu inicial / 1 - Jogo / 2 - Historico / 3 - Estatistica
+		StatsFich		db		'stats.TXT',0
+		HistFich		db		'hist.TXT',0
+		qualMenu			db		0
 		HandleFich      dw      0
 		car_fich        db      ?
 		
@@ -129,14 +131,29 @@ Imp_Fich	PROC
 
 ;abre ficheiro
 
-        mov     ah,3dh			; vamos abrir ficheiro para leitura 
-        mov     al,0			; tipo de ficheiro
-		cmp 	InGame,0
-		jne 	leOutroNome
-		lea 	dx,MenuFich
-		jmp 	jaLeu
-leOutroNome:
+        mov 	ah,3dh			; vamos abrir ficheiro para leitura 
+        mov 	al,0			; tipo de ficheiro
+		cmp		qualMenu,0
+		je 		primeiroMenu
+		cmp 	qualMenu,1
+		je 		segundoMenu
+		cmp 	qualMenu,2
+		je 		terceiroMenu
+		cmp 	qualMenu,3
+		je 		quartoMenu
+		MOV		AH,4Ch
+		INT		21h
+primeiroMenu:
+        lea     dx,MenuFich			; nome do ficheiro
+		jmp		jaLeu
+segundoMenu:
         lea     dx,Fich			; nome do ficheiro
+		jmp		jaLeu
+terceiroMenu:
+        lea     dx,HistFich			; nome do ficheiro
+		jmp		jaLeu
+quartoMenu:
+        lea     dx,StatsFich			; nome do ficheiro
 jaLeu:
 		int     21h			; abre para leitura 
         jc      erro_abrir		; pode aconter erro a abrir o ficheiro 
@@ -246,7 +263,6 @@ LE_TECLA_0	ENDP
 
 ;#############################################################################
 move_snake PROC
-		mov InGame, 1 ; Vai começar o jogo
 CICLO:	
 		goto_xy		POSx,POSy	; Vai para nova possição
 		mov 		ah, 08h	; Guarda o Caracter que está na posição do Cursor
@@ -367,23 +383,62 @@ fim:		goto_xy		40,23
 move_snake ENDP
 
 
+;###############################################
+; 			LER MENU ESTATISTICA
+;###############################################
+ler_menu_stats PROC
+	ciclo:
+		call LE_TECLA_0
+		cmp	al, 1 ; Verifica se e a opcao 1 do menu
+		je historico
+		cmp al, 2 ; Verifica se a opcao 2 do menu
+		je estatisticos
+		cmp al, 3 ; Verifica se e a opcao 3 do menu
+		je voltar
+		jmp ciclo
+	historico:
+		
+		jmp ciclo
+	estatisticos:
+		
+		jmp ciclo
+	voltar:
+		CALL ler_menu_inicial
+ler_menu_stats endp
 
-;###############################################
-; 			LER MENU
-;###############################################
-ler_menu PROC
-		call 		LE_TECLA_0
-		cmp		ah, 1
-		je move_snake
-ler_menu endp
+;################################################
+; 			LER MENU INICAL
+;################################################
+ler_menu_inicial PROC
+	ciclo:
+		call LE_TECLA_0
+		cmp	al, 1 ; Verifica se e a opcao 1 do menu
+		je comeca_jogo
+		cmp al, 2 ; Verifica se a opcao 2 do menu
+		je ver_estatistica
+		cmp al, 3 ; Verifica se e a opcao 3 do menu
+		je sair
+		jmp ciclo
+	comeca_jogo:
+		mov qualMenu, 1 ; Vai comecar o jogo
+		CALL Imp_Fich ; Le mapa de jogo
+		CALL move_snake ; Chama funcao do jogo
+		jmp ciclo
+	ver_estatistica:
+		CALL ler_menu_stats
+		jmp ciclo
+	sair:
+		MOV	AH,4Ch
+		INT	21h
+ler_menu_inicial endp
 
 ;###############################################
 ; 			PINTAR ECRAN
 ;###############################################
 pinta_ecra PROC
 ;
-goto_xy  5,2
-
+;goto_xy  5,2
+;
 pinta_ecra endp
 
 ;#############################################################################
@@ -396,7 +451,7 @@ MENU    Proc
 		MOV		ES,AX		; ES indica segmento de memória de VIDEO
 		CALL 		APAGA_ECRAN 
 		CALL		Imp_Fich
-		CALL		ler_menu
+		CALL		ler_menu_inicial
 		MOV		AH,4Ch
 		INT		21h
 MENU    endp
