@@ -66,6 +66,8 @@ DSEG    SEGMENT PARA PUBLIC 'DATA'
 		Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
 		Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
 		Fich         	db      'moldura.TXT',0
+		MenuFich		db 		'menu.TXT',0
+		InGame			db		0
 		HandleFich      dw      0
 		car_fich        db      ?
 		
@@ -128,9 +130,15 @@ Imp_Fich	PROC
 ;abre ficheiro
 
         mov     ah,3dh			; vamos abrir ficheiro para leitura 
-        mov     al,0			; tipo de ficheiro	
+        mov     al,0			; tipo de ficheiro
+		cmp 	InGame,0
+		jne 	leOutroNome
+		lea 	dx,MenuFich
+		jmp 	jaLeu
+leOutroNome:
         lea     dx,Fich			; nome do ficheiro
-        int     21h			; abre para leitura 
+jaLeu:
+		int     21h			; abre para leitura 
         jc      erro_abrir		; pode aconter erro a abrir o ficheiro 
         mov     HandleFich,ax		; ax devolve o Handle para o ficheiro 
         jmp     ler_ciclo		; depois de abero vamos ler o ficheiro 
@@ -238,7 +246,7 @@ LE_TECLA_0	ENDP
 
 ;#############################################################################
 move_snake PROC
-
+		mov InGame, 1 ; Vai começar o jogo
 CICLO:	
 		goto_xy		POSx,POSy	; Vai para nova possição
 		mov 		ah, 08h	; Guarda o Caracter que está na posição do Cursor
@@ -359,6 +367,16 @@ fim:		goto_xy		40,23
 move_snake ENDP
 
 
+
+;###############################################
+; 			LER MENU
+;###############################################
+ler_menu PROC
+		call 		LE_TECLA_0
+		cmp		ah, 1
+		je move_snake
+ler_menu endp
+
 ;###############################################
 ; 			PINTAR ECRAN
 ;###############################################
@@ -378,8 +396,7 @@ MENU    Proc
 		MOV		ES,AX		; ES indica segmento de memória de VIDEO
 		CALL 		APAGA_ECRAN 
 		CALL		Imp_Fich
-		call		move_snake
-		
+		CALL		ler_menu
 		MOV		AH,4Ch
 		INT		21h
 MENU    endp
