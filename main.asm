@@ -27,9 +27,9 @@ ENDM
 ; MOSTRA - Faz o display de uma string terminada em $
 ;---------------------------------------------------------------------------
 MOSTRA MACRO STR 
-MOV AH,09H
-LEA DX,STR 
-INT 21H
+			MOV AH,09H
+			LEA DX,STR 
+			INT 21H
 ENDM
 ; FIM DAS MACROS
 
@@ -47,29 +47,30 @@ PILHA	ENDS
 
 DSEG    SEGMENT PARA PUBLIC 'DATA'
 
-		POSy	db	10	; a linha pode ir de [1 .. 25]
-		POSx	db	40	; POSx pode ir [1..80]	
-		POSya		db	5	; Posição anterior de y
-		POSxa		db	10	; Posição anterior de x
+		POSy			db	10	; a linha pode ir de [1 .. 25]
+		POSx			db	40	; POSx pode ir [1..80]	
+		POSya			db	5	; Posição anterior de y
+		POSxa			db	10	; Posição anterior de x
 	
 	
-		PASSA_T		dw	0
-		PASSA_T_ant	dw	0
-		direccao	db	3
+		PASSA_T			dw	0
+		PASSA_T_ant		dw	0
+		direccao		db	3
 		
-		Centesimos	dw 	0
-		FACTOR		db	100
+		Centesimos		dw 	0
+		FACTOR			db	100
 		metade_FACTOR	db	?
-		resto		db	0
+		resto			db	0
 						
 		Erro_Open       db      'Erro ao tentar abrir o ficheiro$'
 		Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
 		Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
 		Fich         	db      'moldura.TXT',0
-		MenuFich		db 		'menu.TXT',0 ; 0 - Menu inicial / 1 - Jogo / 2 - Historico / 3 - Estatistica
+		MenuFich		db 		'menu.TXT', 0 ; 0 - Menu inicial / 1 - Jogo / 2 - Estatistica Menu / 3 - Historico / 4 - Estatistica
+		MenuFich2		db		'menu-2.TXT',0
 		StatsFich		db		'stats.TXT',0
 		HistFich		db		'hist.TXT',0
-		qualMenu			db		0
+		qualMenu		db		0
 		HandleFich      dw      0
 		car_fich        db      ?
 		
@@ -85,35 +86,34 @@ CSEG    SEGMENT PARA PUBLIC 'CODE'
 
 
 PASSA_TEMPO PROC	
- 
+		MOV 	AH, 2CH             ; Buscar a hORAS
+		INT		21H                 
 		
-		MOV AH, 2CH             ; Buscar a hORAS
-		INT 21H                 
-		
- 		XOR AX,AX
-		MOV AL, DL              ; centesimos de segundo para ax		
-		mov Centesimos, AX
+ 		XOR 	AX,AX
+		MOV 	AL, DL              ; centesimos de segundo para ax		
+		mov 	Centesimos, AX
 	
-		mov bl, factor		; define velocidade da snake (100; 50; 33; 25; 20; 10)
-		div bl
-		mov resto, AH
-		mov AL, FACTOR
-		mov AH, 0
-		mov bl, 2
-		div bl
-		mov metade_FACTOR, AL
-		mov AL, resto
-		mov AH, 0
-		mov BL, metade_FACTOR	; deve ficar sempre com metade do valor inicial
-		mov AH, 0
-		cmp AX, BX
-		jbe Menor
-		mov AX, 1
-		mov PASSA_T, AX	
-		jmp fim_passa	
+		mov 	bl, factor		; define velocidade da snake (100; 50; 33; 25; 20; 10)
+		div 	bl
+		mov 	resto, AH
+		mov 	AL, FACTOR
+		mov 	AH, 0
+		mov 	bl, 2
+		div 	bl
+		mov 	metade_FACTOR, AL
+		mov 	AL, resto
+		mov 	AH, 0
+		mov 	BL, metade_FACTOR	; deve ficar sempre com metade do valor inicial
+		mov 	AH, 0
+		cmp 	AX, BX
+		jbe 	Menor
+		mov 	AX, 1
+		mov 	PASSA_T, AX	
+		jmp 	fim_passa	
 		
-Menor:		mov AX,0
-		mov PASSA_T, AX		
+Menor:		
+		mov 	AX,0
+		mov 	PASSA_T, AX		
 
 fim_passa:	 
 
@@ -128,32 +128,35 @@ PASSA_TEMPO   ENDP
 
 
 Imp_Fich	PROC
-
-;abre ficheiro
-
-        mov 	ah,3dh			; vamos abrir ficheiro para leitura 
-        mov 	al,0			; tipo de ficheiro
-		cmp		qualMenu,0
+		;abre ficheiro
+        mov 	ah, 3dh			; vamos abrir ficheiro para leitura 
+        mov 	al, 0			; tipo de ficheiro
+		cmp		qualMenu, 0
 		je 		primeiroMenu
-		cmp 	qualMenu,1
+		cmp 	qualMenu, 1
 		je 		segundoMenu
-		cmp 	qualMenu,2
+		cmp 	qualMenu, 2
 		je 		terceiroMenu
-		cmp 	qualMenu,3
+		cmp 	qualMenu, 3
 		je 		quartoMenu
-		MOV		AH,4Ch
+		cmp 	qualMenu, 4
+		je 		quintoMenu
+		MOV		AH, 4Ch
 		INT		21h
 primeiroMenu:
-        lea     dx,MenuFich			; nome do ficheiro
+        lea     dx, MenuFich			; nome do ficheiro
 		jmp		jaLeu
 segundoMenu:
-        lea     dx,Fich			; nome do ficheiro
+        lea     dx, MenuFich2			; nome do ficheiro
 		jmp		jaLeu
 terceiroMenu:
-        lea     dx,HistFich			; nome do ficheiro
+        lea     dx, Fich			; nome do ficheiro
 		jmp		jaLeu
 quartoMenu:
-        lea     dx,StatsFich			; nome do ficheiro
+        lea     dx, HistFich			; nome do ficheiro
+		jmp		jaLeu
+quintoMenu:
+        lea     dx, StatsFich			; nome do ficheiro
 jaLeu:
 		int     21h			; abre para leitura 
         jc      erro_abrir		; pode aconter erro a abrir o ficheiro 
@@ -161,38 +164,38 @@ jaLeu:
         jmp     ler_ciclo		; depois de abero vamos ler o ficheiro 
 
 erro_abrir:
-        mov     ah,09h
-        lea     dx,Erro_Open
+        mov     ah, 09h
+        lea     dx, Erro_Open
         int     21h
         jmp     sai
 
 ler_ciclo:
-        mov     ah,3fh			; indica que vai ser lido um ficheiro 
-        mov     bx,HandleFich		; bx deve conter o Handle do ficheiro previamente aberto 
-        mov     cx,1			; numero de bytes a ler 
-        lea     dx,car_fich		; vai ler para o local de memoria apontado por dx (car_fich)
+        mov     ah, 3fh			; indica que vai ser lido um ficheiro 
+        mov     bx, HandleFich		; bx deve conter o Handle do ficheiro previamente aberto 
+        mov     cx, 1			; numero de bytes a ler 
+        lea     dx, car_fich		; vai ler para o local de memoria apontado por dx (car_fich)
         int     21h			; faz efectivamente a leitura
-	jc	    erro_ler		; se carry é porque aconteceu um erro
-	cmp	    ax,0		;EOF?	verifica se já estamos no fim do ficheiro 
-	je	    fecha_ficheiro	; se EOF fecha o ficheiro 
-        mov     ah,02h			; coloca o caracter no ecran
-	mov	    dl,car_fich		; este é o caracter a enviar para o ecran
-	int	    21h			; imprime no ecran
-	jmp	    ler_ciclo		; continua a ler o ficheiro
+		jc	    erro_ler		; se carry é porque aconteceu um erro
+		cmp	    ax, 0		;EOF?	verifica se já estamos no fim do ficheiro 
+		je	    fecha_ficheiro	; se EOF fecha o ficheiro 
+        mov     ah, 02h			; coloca o caracter no ecran
+		mov	    dl, car_fich		; este é o caracter a enviar para o ecran
+		int	    21h			; imprime no ecran
+		jmp	    ler_ciclo		; continua a ler o ficheiro
 
 erro_ler:
-        mov     ah,09h
-        lea     dx,Erro_Ler_Msg
+        mov     ah, 09h
+        lea     dx, Erro_Ler_Msg
         int     21h
 
 fecha_ficheiro:					; vamos fechar o ficheiro 
-        mov     ah,3eh
-        mov     bx,HandleFich
+        mov     ah, 3eh
+        mov     bx, HandleFich
         int     21h
         jnc     sai
 
-        mov     ah,09h			; o ficheiro pode não fechar correctamente
-        lea     dx,Erro_Close
+        mov     ah, 09h			; o ficheiro pode não fechar correctamente
+        lea     dx, Erro_Close
         Int     21h
 sai:	  RET
 Imp_Fich	endp
@@ -203,28 +206,45 @@ Imp_Fich	endp
 ;ROTINA PARA APAGAR ECRAN
 
 APAGA_ECRAN	PROC
-		PUSH BX
-		PUSH AX
-		PUSH CX
-		PUSH SI
-		XOR	BX,BX
-		MOV	CX,24*80
-		mov bx,160
-		MOV SI,BX
+		PUSH 	BX
+		PUSH 	AX
+		PUSH 	CX
+		PUSH 	SI
+		XOR		BX, BX
+		MOV		CX, 24*80
+		mov 	bx, 160
+		MOV 	SI, BX
 APAGA:	
-		MOV	AL,' '
-		MOV	BYTE PTR ES:[BX],AL
-		MOV	BYTE PTR ES:[BX+1],7
-		INC	BX
-		INC BX
-		INC SI
+		MOV		AL, ' '
+		MOV		BYTE PTR ES:[BX],AL
+		MOV		BYTE PTR ES:[BX+1],7
+		INC		BX
+		INC 	BX
+		INC 	SI
 		LOOP	APAGA
-		POP SI
-		POP CX
-		POP AX
-		POP BX
+		POP 	SI
+		POP 	CX
+		POP 	AX
+		POP 	BX
 		RET
 APAGA_ECRAN	ENDP
+
+;########################################################################
+; LE UMA TECLA	
+
+LE_TECLA	PROC
+		mov		ah, 08h
+		int		21h
+		mov		ah, 0
+		cmp		al, 0
+		jne		SAI_TECLA
+		mov		ah, 08h
+		int		21h
+		mov		ah, 1
+SAI_TECLA:
+		RET
+LE_TECLA	endp
+;########################################################################
 
 ;********************************************************************************
 ; LEITURA DE UMA TECLA DO TECLADO    (ALTERADO)
@@ -235,24 +255,23 @@ APAGA_ECRAN	ENDP
 ; Se não foi premida tecla, devolve ah=0 e al = 0
 ;********************************************************************************
 LE_TECLA_0	PROC
-
 	;	call 	Trata_Horas
-		MOV	AH,0BH
+		MOV		AH, 0BH
 		INT 	21h
-		cmp 	AL,0
-		jne	com_tecla
-		mov	AH, 0
-		mov	AL, 0
-		jmp	SAI_TECLA
+		cmp 	AL, 0
+		jne		com_tecla
+		mov		AH, 0
+		mov		AL, 0
+		jmp		SAI_TECLA
 com_tecla:		
-		MOV	AH,08H
-		INT	21H
-		MOV	AH,0
-		CMP	AL,0
-		JNE	SAI_TECLA
-		MOV	AH, 08H
-		INT	21H
-		MOV	AH,1
+		MOV		AH, 08H
+		INT		21H
+		MOV		AH, 0
+		CMP		AL, 0
+		JNE		SAI_TECLA
+		MOV		AH, 08H
+		INT		21H
+		MOV		AH,1
 SAI_TECLA:	
 		RET
 LE_TECLA_0	ENDP
@@ -264,122 +283,133 @@ LE_TECLA_0	ENDP
 ;#############################################################################
 move_snake PROC
 CICLO:	
-		goto_xy		POSx,POSy	; Vai para nova possição
-		mov 		ah, 08h	; Guarda o Caracter que está na posição do Cursor
-		mov		bh,0		; numero da página
+		goto_xy	POSx,POSy	; Vai para nova possição
+		mov		ah, 08h	; Guarda o Caracter que está na posição do Cursor
+		mov		bh, 0		; numero da página
 		int		10h			
-		cmp 		al, '#'	;  na posição do Cursor
+		cmp		al, '#'	;  na posição do Cursor
 		je		fim
 
-		goto_xy		POSxa,POSya		; Vai para a posição anterior do cursor
+		goto_xy	POSxa,POSya		; Vai para a posição anterior do cursor
 		mov		ah, 02h
 		mov		dl, ' ' 	; Coloca ESPAÇO
 		int		21H	
 
 		inc		POSxa
-		goto_xy		POSxa,POSya	
+		goto_xy	POSxa,POSya	
 		mov		ah, 02h
 		mov		dl, ' '		;  Coloca ESPAÇO
 		int		21H	
-		dec 		POSxa
+		dec 	POSxa
 		
 		
 	
-		goto_xy		POSx,POSy	; Vai para posição do cursor
-IMPRIME:	mov		ah, 02h
+		goto_xy	POSx,POSy	; Vai para posição do cursor
+IMPRIME:
+		mov		ah, 02h
 		mov		dl, '('	; Coloca AVATAR1
 		int		21H
 		
 		inc		POSx
-		goto_xy		POSx,POSy		
+		goto_xy	POSx,POSy		
 		mov		ah, 02h
 		mov		dl, ')'	; Coloca AVATAR2
 		int		21H	
 		dec		POSx
 		
-		goto_xy		POSx,POSy	; Vai para posição do cursor
+		goto_xy	POSx,POSy	; Vai para posição do cursor
 		
 		mov		al, POSx	; Guarda a posição do cursor
 		mov		POSxa, al
 		mov		al, POSy	; Guarda a posição do cursor
-		mov 		POSya, al
+		mov		POSya, al
 		
-LER_SETA:	call 		LE_TECLA_0
+LER_SETA:	
+		call 	LE_TECLA_0
 		cmp		ah, 1
 		je		ESTEND
-		CMP 		AL, 27	; ESCAPE
+		CMP 	AL, 27	; ESCAPE
 		JE		FIM
 		CMP		AL, '1'
 		JNE		TESTE_2
 		MOV		FACTOR, 100
-TESTE_2:	CMP		AL, '2'
+TESTE_2:	
+		CMP		AL, '2'
 		JNE		TESTE_3
 		MOV		FACTOR, 50
-TESTE_3:	CMP		AL, '3'
+TESTE_3:	
+		CMP		AL, '3'
 		JNE		TESTE_4
 		MOV		FACTOR, 25
-TESTE_4:	CMP		AL, '4'
+TESTE_4:
+		CMP		AL, '4'
 		JNE		TESTE_END
 		MOV		FACTOR, 10
 TESTE_END:		
-		CALL		PASSA_TEMPO
+		CALL	PASSA_TEMPO
 		mov		AX, PASSA_T_ant
 		CMP		AX, PASSA_T
 		je		LER_SETA
 		mov		AX, PASSA_T
 		mov		PASSA_T_ant, AX
 		
-verifica_0:	mov		al, direccao
-		cmp 		al, 0
+verifica_0:	
+		mov		al, direccao
+		cmp		al, 0
 		jne		verifica_1
 		inc		POSx		;Direita
 		inc		POSx		;Direita
 		jmp		CICLO
 		
-verifica_1:	mov 		al, direccao
+verifica_1:
+		mov 	al, direccao
 		cmp		al, 1
 		jne		verifica_2
 		dec		POSy		;cima
 		jmp		CICLO
 		
-verifica_2:	mov 		al, direccao
+verifica_2:	
+		mov		al, direccao
 		cmp		al, 2
 		jne		verifica_3
 		dec		POSx		;Esquerda
 		dec		POSx		;Esquerda
 		jmp		CICLO
 		
-verifica_3:	mov 		al, direccao
+verifica_3:
+		mov		al, direccao
 		cmp		al, 3		
 		jne		CICLO
 		inc		POSy		;BAIXO		
 		jmp		CICLO
 		
-ESTEND:		cmp 		al,48h
+ESTEND:
+		cmp 	al, 48h
 		jne		BAIXO
 		mov		direccao, 1
 		jmp		CICLO
 
-BAIXO:		cmp		al,50h
+BAIXO:		
+		cmp		al, 50h
 		jne		ESQUERDA
 		mov		direccao, 3
 		jmp		CICLO
 
 ESQUERDA:
-		cmp		al,4Bh
+		cmp		al, 4Bh
 		jne		DIREITA
 		mov		direccao, 2
 		jmp		CICLO
 
 DIREITA:
-		cmp		al,4Dh
+		cmp		al, 4Dh
 		jne		LER_SETA 
 		mov		direccao, 0	
 		jmp		CICLO
 
-fim:		goto_xy		40,23
+fim:	
+		goto_xy	40, 23
 		RET
-
 move_snake ENDP
 
 
@@ -388,21 +418,30 @@ move_snake ENDP
 ;###############################################
 ler_menu_stats PROC
 	ciclo:
-		call LE_TECLA_0
-		cmp	al, 1 ; Verifica se e a opcao 1 do menu
-		je historico
-		cmp al, 2 ; Verifica se a opcao 2 do menu
-		je estatisticos
-		cmp al, 3 ; Verifica se e a opcao 3 do menu
-		je voltar
-		jmp ciclo
+		call 	LE_TECLA
+		cmp		al, '1' ; Verifica se e a opcao 1 do menu
+		je 		historico
+		cmp 	al, '2' ; Verifica se a opcao 2 do menu
+		je 		estatisticos
+		cmp 	al, '3' ; Verifica se e a opcao 3 do menu
+		je 		voltar
+		jmp 	ciclo
 	historico:
-		
-		jmp ciclo
+		mov		qualMenu, 3 ; Vai comecar o jogo
+		CALL 	APAGA_ECRAN ; Limpa Ecra
+		CALL 	Imp_Fich ; Imprime Ficheiro
+		call 	LE_TECLA
+		jmp 	ciclo
 	estatisticos:
-		
+		mov 	qualMenu, 4 ; Vai comecar o jogo
+		CALL 	APAGA_ECRAN ; Limpa Ecra	
+		CALL 	Imp_Fich ; Imprime Ficheiro
+		call 	LE_TECLA
 		jmp ciclo
 	voltar:
+		mov 	qualMenu, 0
+		CALL 	APAGA_ECRAN 
+		CALL 	Imp_Fich
 		CALL ler_menu_inicial
 ler_menu_stats endp
 
@@ -411,25 +450,29 @@ ler_menu_stats endp
 ;################################################
 ler_menu_inicial PROC
 	ciclo:
-		call LE_TECLA_0
-		cmp	al, 1 ; Verifica se e a opcao 1 do menu
-		je comeca_jogo
-		cmp al, 2 ; Verifica se a opcao 2 do menu
-		je ver_estatistica
-		cmp al, 3 ; Verifica se e a opcao 3 do menu
-		je sair
-		jmp ciclo
+		call 	LE_TECLA
+		cmp		al, '1' ; Verifica se e a opcao 1 do menu
+		je 		comeca_jogo
+		cmp 	al, '2' ; Verifica se a opcao 2 do menu
+		je 		ver_estatistica
+		cmp 	al, '3' ; Verifica se e a opcao 3 do menu
+		je 		sair
+		jmp 	ciclo
 	comeca_jogo:
-		mov qualMenu, 1 ; Vai comecar o jogo
-		CALL Imp_Fich ; Le mapa de jogo
-		CALL move_snake ; Chama funcao do jogo
-		jmp ciclo
+		mov 	qualMenu, 2 ; Vai comecar o jogo
+		CALL 	APAGA_ECRAN ; Limpa Ecra
+		CALL 	Imp_Fich ; Le mapa de jogo
+		CALL 	move_snake ; Chama funcao do jogo
+		jmp 	ciclo
 	ver_estatistica:
-		CALL ler_menu_stats
-		jmp ciclo
+		mov 	qualMenu, 1 ; 
+		CALL 	APAGA_ECRAN ; Limpa Ecra
+		CALL 	Imp_Fich ; Le Menu Stats
+		CALL 	ler_menu_stats
+		jmp 	ciclo
 	sair:
-		MOV	AH,4Ch
-		INT	21h
+		MOV		AH, 4Ch
+		INT		21h
 ler_menu_inicial endp
 
 ;###############################################
@@ -445,15 +488,15 @@ pinta_ecra endp
 ;             MAIN
 ;#############################################################################
 MENU    Proc
-		MOV     	AX,DSEG
-		MOV     	DS,AX
-		MOV		AX,0B800H
-		MOV		ES,AX		; ES indica segmento de memória de VIDEO
-		CALL 		APAGA_ECRAN 
-		CALL		Imp_Fich
-		CALL		ler_menu_inicial
-		MOV		AH,4Ch
-		INT		21h
+		MOV 	AX, DSEG
+		MOV 	DS, AX
+		MOV		AX, 0B800H
+		MOV		ES, AX		; ES indica segmento de memória de VIDEO
+		CALL 	APAGA_ECRAN 
+		CALL 	Imp_Fich
+		CALL 	ler_menu_inicial
+		MOV 	AH, 4Ch
+		INT 	21h
 MENU    endp
 cseg	ends
 end     MENU
