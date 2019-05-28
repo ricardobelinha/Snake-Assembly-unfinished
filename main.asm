@@ -449,6 +449,24 @@ ler_menu_stats PROC
 ler_menu_stats endp
 
 ;################################################
+; 			LIMPAR VARIAVEIS
+;################################################
+LIMPAR_VARIAVEIS PROC
+		mov 	POSy, 10
+		mov 	POSx, 40
+		mov 	POSya, 5
+		mov 	POSxa, 10
+		mov 	PASSA_T, 0
+		mov 	PASSA_T_ant, 0
+		mov 	direccao, 3
+		mov 	Centesimos, 0
+		mov 	FACTOR, 100
+		mov 	metade_FACTOR, 50
+		mov 	resto, 0
+		RET
+LIMPAR_VARIAVEIS endp
+		
+;################################################
 ; 			LER MENU INICAL
 ;################################################
 ler_menu_inicial PROC
@@ -463,6 +481,7 @@ ler_menu_inicial PROC
 		jmp 	ciclo
 	comeca_jogo:
 		mov 	qualMenu, 2 ; Vai comecar o jogo
+		CALL 	LIMPAR_VARIAVEIS
 		CALL 	APAGA_ECRAN ; Limpa Ecra
 		CALL 	Imp_Fich ; Le mapa de jogo
 		CALL 	move_snake ; Chama funcao do jogo
