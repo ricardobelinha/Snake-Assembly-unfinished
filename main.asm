@@ -408,6 +408,9 @@ DIREITA:
 		jmp		CICLO
 
 fim:	
+		mov 	qualMenu, 0
+		CALL 	APAGA_ECRAN 
+		CALL 	Imp_Fich
 		goto_xy	40, 23
 		RET
 move_snake ENDP
@@ -437,12 +440,12 @@ ler_menu_stats PROC
 		CALL 	APAGA_ECRAN ; Limpa Ecra	
 		CALL 	Imp_Fich ; Imprime Ficheiro
 		call 	LE_TECLA
-		jmp ciclo
+		jmp 	ciclo
 	voltar:
 		mov 	qualMenu, 0
 		CALL 	APAGA_ECRAN 
 		CALL 	Imp_Fich
-		CALL ler_menu_inicial
+		CALL 	ler_menu_inicial
 ler_menu_stats endp
 
 ;################################################
