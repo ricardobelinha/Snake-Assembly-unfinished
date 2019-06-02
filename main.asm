@@ -65,7 +65,9 @@ DSEG    SEGMENT PARA PUBLIC 'DATA'
 		ERRO_ABRIR       		db      'Erro ao tentar abrir o ficheiro$'
 		ERRO_LER_MSG    		db      'Erro ao tentar ler do ficheiro$'
 		ERRO_FECHAR      		db      'Erro ao tentar fechar o ficheiro$'
-		
+		msg_open  				db 		'Error opening file!$'
+		msg_seek 			    db 		'Error seeking file!$'
+		msg_write				db 		'Error writing file!$'
 		FICH         			db      'moldura.TXT', 0
 		MENU_PRINCIPAL			db 		'princ.TXT', 0 ; 0 - Menu iniciAL / 1 - Jogo / 2 - Estatistica Menu / 3 - HISTORICO / 4 - Estatistica / 5 - Nivel de Jogo
 		MENU_ESTATISTICA		db		'menu.TXT', 0
@@ -77,6 +79,9 @@ DSEG    SEGMENT PARA PUBLIC 'DATA'
 		NIVEL_3					db		'Hiena$'
 		NIVEL_4					db		'Chita$'
 		QUAL_MENU				db		0
+		NUM_MACA_VERMELHA		db		0
+		NUM_MACA_VERDE			db		0
+		NUM_RATOS				db		0
 		PONTUACAO				dw		0
 		HANDLE_FICH      		dw      0
 		ultimo_num_aleat 		dw 		0
@@ -123,14 +128,12 @@ MENOR:
 FIM_PASSA:	 
  		RET 
 PASSA_TEMPO   ENDP 
+;########################################################################
 
 
 
 
 ;********************************************************************************	
-
-
-
 IMP_FICH	PROC
 		;abre FICHeiro
         MOV 	AH, 3dh								; vamos abrir FICHeiro para leitura 
@@ -211,6 +214,67 @@ IMP_FICH	endp
 
 ;########################################################################
 
+
+;########################################################################
+; Constroi em dx a mensagem final de jogo
+CONSTROI_MENSAGEM_FINAL proc
+
+CONSTROI_MENSAGEM_FINAL endp
+;########################################################################
+
+
+;########################################################################
+ESCREVE_FICHEIRO PROC
+start:
+   mov ah, 3dh
+   mov al, 2
+   LEA     DX, FICHEIRO_HISTORICO	
+   int 21h
+   jc err_open
+
+   mov HANDLE_FICH, ax
+
+   mov bx, ax
+   mov ah, 42h  ; "lseek"
+   mov al, 2    ; position relative to end of file
+   mov cx, 0    ; offset MSW
+   mov dx, 0    ; offset LSW
+   int 21h
+   jc err_seek
+
+   mov bx, HANDLE_FICH
+   CALL CONSTROI_MENSAGEM_FINAL
+   mov cx, 100
+   mov ah, 40h
+   int 21h ; write to file...
+   jc err_write
+
+   mov bx, HANDLE_FICH
+   mov ah, 3eh
+   int 21h ; close file...
+   jc err_close
+   ret
+err_open:
+   LEA DX,  msg_open
+   jmp error
+
+err_seek:   
+   LEA DX, msg_seek
+   jmp error
+
+err_write:
+   LEA DX, msg_write
+   jmp error
+
+err_close:
+	LEA DX, ERRO_FECHAR
+   ; fallthrough
+error:
+   mov ah, 09h
+   int 21h
+ESCREVE_FICHEIRO endp
+   ;********************************************************************************
+
 ;********************************************************************************
 ;ROTINA PARA APAGAR ECRAN
 
@@ -288,7 +352,7 @@ LE_TECLA_0	ENDP
 ;#############################################################################
 MOVE_SNAKE PROC
 CICLO:	
-		;CALL 	IMP_PONTUACAO
+		CALL 	IMP_PONTUACAO
 		GOTO_XY	POS_X,POS_Y			; Vai para nova possição
 		MOV		AH, 08h				; Guarda o Caracter que está na posição do Cursor
 		MOV		bh, 0				; numero da página
@@ -298,18 +362,77 @@ CICLO:
 MACA_VERMELHA:
 		CMP 	AL, 'm'
 		JNE		MACA_VERDE
-		;CMP		
+		INC		NUM_MACA_VERMELHA
+		CMP		FACTOR, 100
+		JE 		MACA_VERMELHA_LESMA
+		CMP		FACTOR, 50
+		JE 		MACA_VERMELHA_LEBRE
+		CMP		FACTOR, 25
+		JE 		MACA_VERMELHA_HIENA
+		CMP		FACTOR, 10
+		JE 		MACA_VERMELHA_CHITA
+		jmp 	CONTINUA
+MACA_VERMELHA_LESMA:
 		inc 	pontuacao
+		jmp 	CONTINUA
+MACA_VERMELHA_LEBRE:
+		add 	pontuacao, 2
+		jmp 	CONTINUA
+MACA_VERMELHA_HIENA:
+		add 	pontuacao, 3
+		jmp 	CONTINUA
+MACA_VERMELHA_CHITA:
+		add 	pontuacao, 4
 		jmp 	CONTINUA
 MACA_VERDE:
 		CMP 	AL, 'M'
 		JNE		RATO
+		INC		NUM_MACA_VERDE
+		CMP		FACTOR, 100
+		JE 		MACA_VERDE_LESMA
+		CMP		FACTOR, 50
+		JE 		MACA_VERDE_LEBRE
+		CMP		FACTOR, 25
+		JE 		MACA_VERDE_HIENA
+		CMP		FACTOR, 10
+		JE 		MACA_VERDE_CHITA
+		jmp 	CONTINUA
+MACA_VERDE_LESMA:
 		add 	pontuacao, 2
+		jmp 	CONTINUA
+MACA_VERDE_LEBRE:
+		add 	pontuacao, 4
+		jmp 	CONTINUA
+MACA_VERDE_HIENA:
+		add 	pontuacao, 6
+		jmp 	CONTINUA
+MACA_VERDE_CHITA:
+		add 	pontuacao, 8
 		jmp 	CONTINUA
 RATO:
 		CMP 	AL, 'R'
 		JNE		CONTINUA
+		INC		NUM_RATOS
+		CMP		FACTOR, 100
+		JE 		RATO_LESMA
+		CMP		FACTOR, 50
+		JE 		RATO_LEBRE
+		CMP		FACTOR, 25
+		JE 		RATO_HIENA
+		CMP		FACTOR, 10
+		JE 		RATO_CHITA
+		jmp 	CONTINUA
+RATO_LESMA:
 		sub 	pontuacao, 3
+		jmp 	CONTINUA
+RATO_LEBRE:
+		sub 	pontuacao, 6
+		jmp 	CONTINUA
+RATO_HIENA:
+		sub 	pontuacao, 9
+		jmp 	CONTINUA
+RATO_CHITA:
+		sub 	pontuacao, 12
 		jmp 	CONTINUA
 CONTINUA:
 		GOTO_XY	POS_X_ANT,POS_Y_ANT		; Vai para a posição anterior do cursor
@@ -471,6 +594,9 @@ LIMPAR_VARIAVEIS PROC
 		MOV 	METADE_FACTOR, 50
 		MOV		PONTUACAO, 0
 		MOV 	RESTO, 0
+		MOV 	NUM_MACA_VERMELHA, 0
+		MOV		NUM_MACA_VERDE, 0
+		MOV		NUM_RATOS, 0
 		RET
 LIMPAR_VARIAVEIS endp
 
@@ -546,7 +672,7 @@ IMP_NIVEL endp
 ; assume-se que DS esta a apontar para o segmento onde esta armazenada ultimo_num_aleat
 ;################################################
 CalcAleat proc near
-
+; RESTO DA DIVISAO (SE QUEREMOS 100 FICA 100)
 	sub	sp,2		; 
 	push	bp
 	mov	bp,sp
@@ -580,44 +706,42 @@ CalcAleat proc near
 	ret
 CalcAleat endp
 
-;##################################################################################################
-; 									CONVERTE NUMERO PARA STRING
-; CARACTER CORRESPONDENTE POR EXEMPLO A 4 É 52, PARA REPRESENTAR OS NUMEROS INTEIROS É ADICIONAR 48
-;##################################################################################################
-CONVERTE proc		;inicio do procedimento
-	PUSHF
-	PUSH BX		;guarda contexto
-	PUSH DX
-	ADD DI, 4	;avavnça para o digito das unidades
-	MOV BX, 10      ;divisor  = 10
-ciclo:
-	MOV DX, 0     ;divisor...
-	DIV BX	     ;DX:AX/BX = AX (resto = DX)
-    ADD DL, 48    ;converte 4 em '4'...
-	MOV [DI], DL
-	DEC DI
-	CMP AX, 0
-	JNE ciclo
-	POP DX
-	POP BX	;recupera contexto
-	POPF
-	RET		;sai da funçao
-CONVERTE  endp		;fim do procedimento
 
 ;################################################
-; 			IMPRIME PONTUACAO
-;################################################
-IMP_PONTUACAO  proc 
-	MOV DI, 16    		;indice do digito das unidades
-	MOV BX, 10    		;divisor = 10
+; IMPRIME PONTUAÇÃO
 
-	MOV DX, PONTUACAO	;dividendo = numero...
-	CALL CONVERTE
-	GOTO_XY	53,24
-	MOV	ah, 09h			;print string (...$)
-	INT	21h
-	RET
-IMP_PONTUACAO  endp
+DISPLAY_DIGIT proc
+    ADD DL, '0'
+    MOV AH, 02H
+    INT 21H
+    ret
+DISPLAY_DIGIT endp   
+   
+DISPLAY_NUMBER proc    
+    TEST AX, AX
+    JZ RETURN
+    XOR DX, DX
+    ;ax tem o numero para mostrar
+    ;bx tem que ter 10
+    MOV BX,10
+    DIV BX
+    PUSH DX
+    CALL DISPLAY_NUMBER  
+    POP DX
+    CALL DISPLAY_DIGIT
+    ret
+RETURN:
+    mov ah, 02  
+    ret    
+DISPLAY_NUMBER endp 
+   
+IMP_PONTUACAO proc  
+	GOTO_XY 60,24
+    mov ax, PONTUACAO
+    CALL DISPLAY_NUMBER
+    ret    
+IMP_PONTUACAO   endp 
+;################################################
 		
 ;################################################
 ; 			LER MENU INICAL
@@ -652,15 +776,6 @@ LER_MENU_INICIAL PROC
 		MOV		AH, 4Ch
 		INT		21h
 LER_MENU_INICIAL endp
-
-;###############################################
-; 			PINTAR ECRAN
-;###############################################
-pINTa_ecra PROC
-;
-;GOTO_XY  5,2
-;
-pINTa_ecra endp
 
 ;#############################################################################
 ;             MAIN
