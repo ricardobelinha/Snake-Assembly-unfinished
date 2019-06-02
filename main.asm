@@ -52,6 +52,8 @@ DSEG    SEGMENT PARA PUBLIC 'DATA'
 		POS_Y_ANT				db		5	; Posição anterior de y
 		POS_X_ANT				db		10	; Posição anterior de x
 	
+		RATO_POS_X				db		0
+		RATO_POS_Y				db		0
 	
 		PASSA_T					dw		0
 		PASSA_T_ANT				dw		0
@@ -83,6 +85,13 @@ DSEG    SEGMENT PARA PUBLIC 'DATA'
 		NUM_MACA_VERDE			db		0
 		NUM_RATOS				db		0
 		PONTUACAO				dw		0
+		TEMP_X					db		0
+		TEMP_Y					db		0
+		Horas					dw		0
+		Minutos					dw		0
+		Segundos				dw		0
+		SEGUNDOS_ATUAIS			dw		0
+		SEGUNDOS_ANTIGOS		dw		0
 		HANDLE_FICH      		dw      0
 		ultimo_num_aleat 		dw 		0
 		CAR_FICH      			db      ?
@@ -349,9 +358,205 @@ SAI_TECLA:
 		RET
 LE_TECLA_0	ENDP
 
+;###################################################################################################
+; HORAS  - LE Hora DO SISTEMA E COLOCA em tres variaveis (Horas, Minutos, Segundos)
+; CH - Horas, CL - Minutos, DH - Segundos
+
+Ler_TEMPO PROC	
+		PUSH AX
+		PUSH BX
+		PUSH CX
+		PUSH DX
+	
+		PUSHF
+		
+		MOV AH, 2CH             ; Buscar a hORAS
+		INT 21H                 
+		
+		XOR AX,AX
+		MOV AL, DH              ; segundos para al
+		mov Segundos, AX		; guarda segundos na variavel correspondente
+		
+		XOR AX,AX
+		MOV AL, CL              ; Minutos para al
+		mov Minutos, AX         ; guarda MINUTOS na variavel correspondente
+		
+		XOR AX,AX
+		MOV AL, CH              ; Horas para al
+		mov Horas,AX			; guarda HORAS na variavel correspondente
+ 
+		POPF
+		POP DX
+		POP CX
+		POP BX
+		POP AX
+ 		RET 
+Ler_TEMPO   ENDP 
+;############################################
+
+;############################################
+Trata_Horas PROC
+
+		PUSHF
+		PUSH AX	
+
+		CALL 	Ler_TEMPO				; Horas MINUTOS e segundos do Sistema
+		
+		MOV		AX, Segundos
+		cmp		AX, SEGUNDOS_ANTIGOS; Verifica se os segundos mudaram desde a ultima leitura
+		je		fim_horas			; Se a hora não mudou desde a última leitura sai.
+		mov		SEGUNDOS_ANTIGOS, AX			; Se segundos são diferentes actualiza informação do tempo
+		INC		SEGUNDOS_ATUAIS
+		CALL	GERA_RATO
+fim_horas:		
+		goto_xy	POS_X,POS_Y		; Volta a colocar o cursor onde estava antes de actualizar as horas
+		POPF
+		POP AX
+		RET
+		RET
+Trata_Horas endp
+;############################################
+
+;############################################
+GERA_RATO	proc
+	cmp SEGUNDOS_ATUAIS, 4
+	JNE	SAI
+	mov SEGUNDOS_ATUAIS, 0
+	GOTO_XY	RATO_POS_X, RATO_POS_Y
+	MOV		AH, 02h
+	MOV		DL, ' ' 	; Coloca ESPAÇO
+	INT		21H	
+CALCULA_X:
+	call CalcAleat
+	pop AX
+	xor AH,AH
+	Mov Bl, 66
+	Div BL
+	Mov TEMP_X, AH
+	
+	xor ax, ax
+	mov al, TEMP_X
+	mov bl,2
+	div bl
+	cmp ah, 0
+	jne CALCULA_X
+	cmp TEMP_X, 66
+	jg CALCULA_X
+	cmp TEMP_X, 2
+	jl CALCULA_X
+
+CALCULA_Y:
+	call CalcAleat
+	pop AX
+	xor AH,AH
+	Mov Bl,20
+	Div BL
+	Mov TEMP_Y, AH
+	cmp TEMP_Y, 20
+	jg CALCULA_Y
+	cmp TEMP_Y, 3
+	jl CALCULA_Y
+	
+	GOTO_XY	TEMP_X, TEMP_Y
+	MOV		dl,	TEMP_X
+	MOV		RATO_POS_X, dl
+	MOV		dl,	TEMP_Y
+	MOV		RATO_POS_Y, dl
+	mov		ah, 02h
+	mov		dl, 'R'	; Coloca AVATAR1
+	int		21H
+SAI:
+	ret
+GERA_RATO	endp
+;####################################################
+
+
+;############################################
+GERA_MACA_VERDE	proc
+CALCULA_X:
+	call CalcAleat
+	pop AX
+	xor AH,AH
+	Mov Bl,66
+	Div BL
+	Mov TEMP_X, AH
+	
+	xor ax, ax
+	mov al, TEMP_X
+	mov bl,2
+	div bl
+	cmp ah, 0
+	jne CALCULA_X
+	cmp TEMP_X, 66
+	jg CALCULA_X
+	cmp TEMP_X, 2
+	jl CALCULA_X
+
+CALCULA_Y:
+	call CalcAleat
+	pop AX
+	xor AH,AH
+	Mov Bl,20
+	Div BL
+	Mov TEMP_Y, AH
+	cmp TEMP_Y, 20
+	jg CALCULA_Y
+	cmp TEMP_Y, 3
+	jl CALCULA_Y
+	
+	GOTO_XY	TEMP_X, TEMP_Y
+	mov		ah, 02h
+	mov		dl, 'M'	; Coloca AVATAR1
+	int		21H
+	ret
+GERA_MACA_VERDE	endp
+;####################################################
+
+;############################################
+GERA_MACA_VERMELHA	proc
+CALCULA_X:
+	call CalcAleat
+	pop AX
+	xor AH,AH
+	Mov Bl, 66
+	Div BL
+	Mov TEMP_X, AH
+	
+	xor ax, ax
+	mov al, TEMP_X
+	mov bl,2
+	div bl
+	cmp ah, 0
+	jne CALCULA_X
+	cmp TEMP_X, 66
+	jg CALCULA_X
+	cmp TEMP_X, 2
+	jl CALCULA_X
+
+CALCULA_Y:
+	call CalcAleat
+	pop AX
+	xor AH,AH
+	Mov Bl,20
+	Div BL
+	Mov TEMP_Y, AH
+	cmp TEMP_Y, 20
+	jg CALCULA_Y
+	cmp TEMP_Y, 3
+	jl CALCULA_Y
+	
+	GOTO_XY	TEMP_X, TEMP_Y
+	mov		ah, 02h
+	mov		dl, 'm'	; Coloca AVATAR1
+	int		21H
+	ret
+GERA_MACA_VERMELHA	endp
+;####################################################
+
 ;#############################################################################
 MOVE_SNAKE PROC
 CICLO:	
+		CALL 	Trata_Horas
 		CALL 	IMP_PONTUACAO
 		GOTO_XY	POS_X,POS_Y			; Vai para nova possição
 		MOV		AH, 08h				; Guarda o Caracter que está na posição do Cursor
@@ -363,6 +568,7 @@ MACA_VERMELHA:
 		CMP 	AL, 'm'
 		JNE		MACA_VERDE
 		INC		NUM_MACA_VERMELHA
+		CALL	GERA_MACA_VERMELHA
 		CMP		FACTOR, 100
 		JE 		MACA_VERMELHA_LESMA
 		CMP		FACTOR, 50
@@ -388,6 +594,7 @@ MACA_VERDE:
 		CMP 	AL, 'M'
 		JNE		RATO
 		INC		NUM_MACA_VERDE
+		CALL	GERA_MACA_VERDE
 		CMP		FACTOR, 100
 		JE 		MACA_VERDE_LESMA
 		CMP		FACTOR, 50
@@ -435,6 +642,10 @@ RATO_CHITA:
 		sub 	pontuacao, 12
 		jmp 	CONTINUA
 CONTINUA:
+		cmp		pontuacao, 0
+		jnl		CONTINUA_V2
+		mov		pontuacao, 0
+CONTINUA_V2:
 		GOTO_XY	POS_X_ANT,POS_Y_ANT		; Vai para a posição anterior do cursor
 		MOV		AH, 02h
 		MOV		DL, ' ' 	; Coloca ESPAÇO
@@ -597,6 +808,11 @@ LIMPAR_VARIAVEIS PROC
 		MOV 	NUM_MACA_VERMELHA, 0
 		MOV		NUM_MACA_VERDE, 0
 		MOV		NUM_RATOS, 0
+		MOV		SEGUNDOS_ATUAIS, 0
+		MOV		RATO_POS_X, 0
+		MOV		RATO_POS_Y, 0
+		MOV		TEMP_X, 0
+		MOV		TEMP_Y, 0
 		RET
 LIMPAR_VARIAVEIS endp
 
@@ -735,10 +951,19 @@ RETURN:
     ret    
 DISPLAY_NUMBER endp 
    
-IMP_PONTUACAO proc  
+IMP_PONTUACAO proc 
+	cmp	PONTUACAO, 0
+	JLE	MENOR
 	GOTO_XY 60,24
     mov ax, PONTUACAO
     CALL DISPLAY_NUMBER
+	jmp ACABA
+MENOR:
+	GOTO_XY 60,24
+	MOV	DL, '0'
+	MOV AH, 02H
+    INT 21H
+ACABA:
     ret    
 IMP_PONTUACAO   endp 
 ;################################################
@@ -767,6 +992,8 @@ LER_MENU_INICIAL PROC
 		CALL 	APAGA_ECRAN ; Limpa Ecra
 		CALL 	IMP_FICH ; Le mapa de jogo
 		CALL 	IMP_NIVEL
+		CALL 	GERA_MACA_VERDE
+		CALL	GERA_MACA_VERMELHA
 		CALL 	MOVE_SNAKE ; Chama funcao do jogo
 		JMP 	INICIO
 	VER_ESTATISTICA:
